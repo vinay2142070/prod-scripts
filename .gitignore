@@ -1,0 +1,28 @@
+# .gitignore for Python projects
+
+# Byte-compiled / optimized / DLLs
+__pycache__/
+*.py[cod]
+*@py.class
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+.env/
+
+# Pytest caches
+.pytest_cache/
+
+# IDEs
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Distribution
+build/
+dist/
+*.egg-info/

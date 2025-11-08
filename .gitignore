@@ -1,28 +1,24 @@
-# .gitignore for Python projects
-
-# Byte-compiled / optimized / DLLs
+# Python
 __pycache__/
 *.py[cod]
-*@py.class
+*$py.class
 
 # Virtual environments
 venv/
-ENV/
-env/
-.venv/
 .env/
+env/
 
-# Pytest caches
-.pytest_cache/
-
-# IDEs
-.idea/
-.vscode/
-
-# macOS
-.DS_Store
-
-# Distribution
+# Packaging / build
 build/
 dist/
 *.egg-info/
+.eggs/
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+

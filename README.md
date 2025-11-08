@@ -4,7 +4,7 @@ Below are a set of practical automation snippets. Each snippet is a small, reusa
 
 ## Python
 
-- organize-files-by-ext.py
+- organize-by-ext.py
   - Language: Python
   - Description: Organizes files into subfolders by extension with an optional dry-run capability.
   - Path: python/organize-by-ext.py

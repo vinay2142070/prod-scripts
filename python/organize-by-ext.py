@@ -1,56 +1,64 @@
 #!/usr/bin/env python3
 import argparse
-import shutil
 from pathlib import Path
+import shutil
 
-def ensure_dir(p: Path):
-    p.mkdir(parents=True, exist_ok=True)
+EXT_CATEGORIES = {
+    'Images': {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.tiff'},
+    'Archives': {'.zip', '.tar', '.gz', '.bz2', '.rar', '.7z'},
+    'Documents': {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.md', '.csv'},
+    'Audio': {'.mp3', '.wav', '.aac', '.flac', '.ogg'},
+    'Video': {'.mp4', '.mkv', '.avi', '.mov', '.webm'},
+    'Code': {'.py', '.js', '.java', '.c', '.cpp', '.cs', '.rb', '.go', '.ts', '.sh', '.html', '.css'},
+}
 
-def safe_dest(target_dir: Path, fname: str) -> Path:
-    dest = target_dir / fname
-    if not dest.exists():
-        return dest
-    stem = dest.stem
-    ext = dest.suffix
+def categorize(ext: str) -> str:
+    ext = ext.lower()
+    for cat, exts in EXT_CATEGORIES.items():
+        if ext in exts:
+            return cat
+    return 'Other'
+
+def unique_path(path: Path) -> Path:
+    if not path.exists():
+        return path
+    base = path.stem
+    suffix = path.suffix
     i = 1
     while True:
-        new_name = f"{stem}_{i}{ext}"
-        candidate = target_dir / new_name
+        candidate = path.with_name(f"{base}_{i}{suffix}")
         if not candidate.exists():
             return candidate
         i += 1
 
-def organize(src: Path, dst: Path, action: str = 'move', dry_run: bool = True):
-    if not src.exists():
-        print(f"Source directory does not exist: {src}")
-        return
-    if not dst.exists():
-        dst.mkdir(parents=True, exist_ok=True)
-    for p in src.rglob('*'):
-        if p.is_file():
-            ext = p.suffix.lower().lstrip('.')
-            category = ext if ext else 'no_ext'
-            target_dir = dst / category
-            ensure_dir(target_dir)
-            dest = safe_dest(target_dir, p.name)
-            if dry_run:
-                print(f"[DRY-RUN] {action.upper()} '{p}' -> '{dest}'")
-            else:
-                if action == 'move':
-                    shutil.move(str(p), str(dest))
-                else:
-                    shutil.copy2(str(p), str(dest))
-
 def main():
-    parser = argparse.ArgumentParser(description="Organize files by extension into subfolders.")
-    parser.add_argument('--src', required=True, help="Source directory to organize")
-    parser.add_argument('--dst', required=True, help="Destination base directory for organized files")
-    parser.add_argument('--action', choices=['move', 'copy'], default='move', help="Move or copy files (default: move)")
-    parser.add_argument('--execute', action='store_true', help="Execute the operation; default is dry-run")
+    parser = argparse.ArgumentParser(description="Organize files in a directory into subfolders by file type (extension).")
+    parser.add_argument('path', nargs='?', default='.', help="Directory to organize (default: current directory)")
+    parser.add_argument('--dest', default=None, help="Base destination directory. If omitted, organizes inside the source directory.")
+    parser.add_argument('--dry-run', action='store_true', help="Show what would be done without moving/copying files.")
+    parser.add_argument('--move', action='store_true', help="Move files instead of copying.")
     args = parser.parse_args()
 
-    dry_run = not args.execute
-    organize(Path(args.src), Path(args.dst), action=args.action, dry_run=dry_run)
+    base = Path(args.path).resolve()
+    dest_base = Path(args.dest).resolve() if args.dest else base
+    if not base.exists() or not base.is_dir():
+        raise SystemExit(f"Error: {base} is not a directory.")
+
+    for file in base.rglob('*'):
+        if file.is_file():
+            cat = categorize(file.suffix)
+            target_dir = dest_base / cat
+            target_dir.mkdir(parents=True, exist_ok=True)
+            dest_path = target_dir / file.name
+            dest_path = unique_path(dest_path)
+
+            if args.dry_run:
+                print(f"[DRY-RUN] {file} -> {dest_path}")
+            else:
+                if args.move:
+                    shutil.move(str(file), str(dest_path))
+                else:
+                    shutil.copy2(str(file), str(dest_path))
 
 if __name__ == '__main__':
     main()

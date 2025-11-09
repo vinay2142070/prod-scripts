@@ -1,24 +1,33 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environments
-venv/
-.env/
-env/
-
-# Packaging / build
+# Distribution / packaging
+.Python
 build/
 dist/
-*.egg-info/
-.eggs/
+egg-info/
 
-# Editor / IDE
+# Installer logs
+pip-log.txt
+pip-selfcheck.json
+
+# Virtual environments
+venv/
+ENV/
+.env/
+.env.*
+
+# PyTest
+.pytest_cache/
+
+# VSCode
 .vscode/
-.idea/
 
-# OS
+# MACOS
 .DS_Store
-Thumbs.db
 
+# Logs
+logs/
+*.log

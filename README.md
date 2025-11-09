@@ -1,12 +1,11 @@
-# Snippets
+# prod-scripts Snippets
 
-Below are a set of practical automation snippets. Each snippet is a small, reusable piece of code you can drop into your toolkit.
+This repository hosts small, reusable automation snippets across languages.
 
-## Python
-
-- organize-by-ext.py
+Snippets
+- Title: Cleanup Old Files
   - Language: Python
-  - Description: Organizes files into subfolders by extension with an optional dry-run capability.
-  - Path: python/organize-by-ext.py
+  - Description: Delete/list files older than N days in a directory (dry-run by default)
+  - Path: python/cleanup-old-files.py
 
----
+License: MIT

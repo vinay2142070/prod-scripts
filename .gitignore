@@ -1,21 +1,19 @@
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Node
-node_modules/
-
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Logs
-*.log
+# Distribution
+build/
+dist/
+*.egg-info/
 
-# Compiled sources
-*.o
-*.a
-*.so
+# Virtual environments
+venv/
+ENV/
+env/
+.env
 
+# IDE
+.vscode/
+*.iml

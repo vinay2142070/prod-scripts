@@ -1,9 +1,17 @@
 # prod-scripts Snippets
 
-Snippets collected for quick automation tasks. Each snippet is stored under a language-specific folder with a short description and a path for easy reference.
+This repository hosts small automation code snippets intended to accelerate common DevOps and sysadmin tasks.
 
-## Snippet: Organize files by extension
-- Language/Topic: Shell
-- Description: Moves files into subfolders grouped by their file extensions (e.g., pdf/, jpg/, no_ext/). Safe against overwrites and skips the snippet itself if in the same directory.
-- Path: shell/organize-by-ext.sh
+## Snippet Catalog
 
+### Disk Cleanup Archive (shell/disk-cleanup-archive.sh)
+- Language: Shell (bash)
+- Description: Archive and compress files older than N days when disk usage hits a threshold.
+- Path: shell/disk-cleanup-archive.sh
+
+## How to contribute
+- Add new snippets in language-specific folders.
+- Use a descriptive slug for filenames (≤5 words, kebab-case).
+
+## License
+This project isMIT licensed.

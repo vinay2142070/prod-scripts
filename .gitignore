@@ -1,19 +1,17 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+# macOS
+.DS_Store
 
-# Distribution
-build/
+# Node / JS
+node_modules/
 dist/
-*.egg-info/
 
-# Virtual environments
-venv/
-ENV/
-env/
+# Python
+__pycache__/
+*.pyc
+
+# OS
+Thumbs.db
+
+# Misc
 .env
-
-# IDE
-.vscode/
-*.iml
+*.log

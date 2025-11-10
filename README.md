@@ -1,12 +1,12 @@
-# prod-scripts Snippets
+# prod-scripts
 
-This repository contains small, practical automation snippets organized by language.
+Snippets repository for automation scripts.
 
-## Snippet: Smart Downloads Organizer
+## Snippets
 
-- Language: Python
-- Description: Organize Downloads into categorized folders with deduplication and dry-run support.
-- Path: python/smart-downloads-organizer.py
-- Short description: Organize Downloads into categorized folders with deduplication and dry-run support.
+- organize-downloads (Shell)
+  - Description: Tidies Downloads by categorizing and deduplicating files with dry-run option
+  - Path: shell/organize-downloads.sh
 
-See the snippet file for the full code.
+## License
+MIT

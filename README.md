@@ -1,11 +1,10 @@
-# prod-scripts Snippets
-
-This repository hosts small, reusable automation snippets across languages.
+# prod-scripts
 
 Snippets
-- Title: Cleanup Old Files
-  - Language: Python
-  - Description: Delete/list files older than N days in a directory (dry-run by default)
-  - Path: python/cleanup-old-files.py
 
-License: MIT
+This repository contains handy automation snippets organized by language.
+
+## Snippet: organize-downloads
+- Language: bash
+- Description: Shell script to organize Downloads by type into category folders with a dry-run option and safe name handling.
+- Path: shell/organize-downloads.sh

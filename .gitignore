@@ -1,11 +1,16 @@
-# Node / npm
+# Ignored patterns for common development environments
+# This is a minimal baseline to prevent committing common transient files
 node_modules/
-
-# Python
-__pycache__/
-*.pyc
-
-# OS generated files
+*.log
+*.tmp
 .DS_Store
-Thumbs.db
+.__pycache__/
+.pytest_cache/
+.env
+venv/
+build/
+dist/
+*.class
+*.o
+*.pyc
 

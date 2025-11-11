@@ -1,0 +1,1 @@
+This is a placeholder file to ensure the repo has at least one non-code file in some contexts.

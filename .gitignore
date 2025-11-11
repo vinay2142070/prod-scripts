@@ -1,18 +1,11 @@
-# Node
+# Node / npm
 node_modules/
-dist/
-.vite/
-.env
 
 # Python
 __pycache__/
 *.pyc
 
-# macOS
+# OS generated files
 .DS_Store
+Thumbs.db
 
-# Logs
-*.log
-
-# Temp
-*.tmp

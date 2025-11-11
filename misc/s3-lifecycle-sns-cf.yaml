@@ -1,0 +1,78 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Create an S3 bucket with SSE, public-access block, lifecycle (intelligent-tiering + expiry)
+  and SNS notifications on object creation. Also enforces TLS-only access via bucket policy.
+
+Resources:
+  SnsTopic:
+    Type: AWS::SNS::Topic
+
+  DataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: IntelligentTierAndExpire
+            Status: Enabled
+            Transitions:
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: 30
+            ExpirationInDays: 365
+      NotificationConfiguration:
+        TopicConfigurations:
+          - Event: "s3:ObjectCreated:*"
+            Topic: !Ref SnsTopic
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DataBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Join ["", [ !GetAtt DataBucket.Arn, "/*" ]]
+              - !GetAtt DataBucket.Arn
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+  SnsTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SnsTopic
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowS3Publish
+            Effect: Allow
+            Principal:
+              Service: s3.amazonaws.com
+            Action: "sns:Publish"
+            Resource: !Ref SnsTopic
+            Condition:
+              ArnLike:
+                "aws:SourceArn": !GetAtt DataBucket.Arn
+
+Outputs:
+  BucketName:
+    Description: "S3 bucket name"
+    Value: !Ref DataBucket
+  SnsTopicArn:
+    Description: "SNS topic ARN for object-created notifications"
+    Value: !Ref SnsTopic

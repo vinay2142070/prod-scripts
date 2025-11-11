@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Secure S3 bucket with SSE, versioning, lifecycle transition to Glacier,
+  public access block, and policy denying non-TLS or non-encrypted uploads.
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: ""
+    Description: Optional. Specify a name for the bucket; leave empty for generated name.
+
+Conditions:
+  HasBucketName: !Not [!Equals [!Ref BucketName, ""]]
+
+Resources:
+  SecureBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !If [HasBucketName, !Ref BucketName, !Ref AWS::NoValue]
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToGlacier
+            Status: Enabled
+            Prefix: ""
+            Transitions:
+              - StorageClass: GLACIER
+                TransitionInDays: 30
+
+  SecureBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SecureBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:PutObject"
+            Resource: !Sub "${SecureBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+          - Sid: DenyUnencryptedUploads
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:PutObject"
+            Resource: !Sub "${SecureBucket.Arn}/*"
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption: AES256
+
+Outputs:
+  BucketName:
+    Description: Name of the created S3 bucket
+    Value: !Ref SecureBucket
+  BucketArn:
+    Description: ARN of the created S3 bucket
+    Value: !GetAtt SecureBucket.Arn

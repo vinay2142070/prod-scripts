@@ -1,18 +1,18 @@
 # Node
 node_modules/
+dist/
+.vite/
+.env
 
 # Python
 __pycache__/
 *.pyc
-*.pyo
+
+# macOS
+.DS_Store
 
 # Logs
 *.log
 
-# OS
-.DS_Store
-
-# Build artifacts
-dist/
-build/
-
+# Temp
+*.tmp

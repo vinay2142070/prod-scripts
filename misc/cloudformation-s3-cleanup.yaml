@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Creates an S3 bucket and a scheduled Lambda that deletes objects older than N days.
+Parameters:
+  RetentionDays:
+    Type: Number
+    Default: 30
+    Description: Number of days after which objects will be deleted
+Resources:
+  CleanupBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # No BucketName => CFN generates a unique name
+      VersioningConfiguration:
+        Status: Disabled
+    DeletionPolicy: Retain
+
+  CleanupLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3CleanupAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt CleanupBucket.Arn
+              - Effect: Allow
+                Action:
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub '${CleanupBucket.Arn}/*'
+
+  S3CleanupFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.11
+      Handler: index.handler
+      Role: !GetAtt CleanupLambdaRole.Arn
+      Timeout: 300
+      MemorySize: 128
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref CleanupBucket
+          RETENTION_DAYS: !Ref RetentionDays
+      Code:
+        ZipFile: |
+          import os
+          import boto3
+          import datetime
+
+          s3 = boto3.client('s3')
+
+          def list_all_objects(bucket):
+              paginator = s3.get_paginator('list_objects_v2')
+              for page in paginator.paginate(Bucket=bucket):
+                  for obj in page.get('Contents', []):
+                      yield obj
+
+          def handler(event, context):
+              bucket = os.environ['BUCKET_NAME']
+              days = int(os.environ.get('RETENTION_DAYS', '30'))
+              cutoff = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
+              to_delete = []
+              for obj in list_all_objects(bucket):
+                  if obj['LastModified'] < cutoff:
+                      to_delete.append({'Key': obj['Key']})
+                      # batch-delete in groups of 1000
+                      if len(to_delete) == 1000:
+                          s3.delete_objects(Bucket=bucket, Delete={'Objects': to_delete})
+                          to_delete = []
+              if to_delete:
+                  s3.delete_objects(Bucket=bucket, Delete={'Objects': to_delete})
+              return {'status': 'ok', 'deleted_older_than_days': days}
+  DailyScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: rate(1 day)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt S3CleanupFunction.Arn
+          Id: S3CleanupTarget
+
+  AllowEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref S3CleanupFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DailyScheduleRule.Arn
+
+Outputs:
+  BucketName:
+    Description: Name of the bucket being cleaned
+    Value: !Ref CleanupBucket
+  LambdaName:
+    Description: Cleanup Lambda function name
+    Value: !Ref S3CleanupFunction
+  RetentionDays:
+    Description: Objects older than this will be deleted
+    Value: !Ref RetentionDays

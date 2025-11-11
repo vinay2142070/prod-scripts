@@ -1,13 +1,9 @@
-# prod-scripts Snippets
+# prod-scripts
 
-Snippets for automation scripts.
+Snippets
 
-- Title: rotate-backup-dir
-  Language: Bash
-  Description: Simple rotating backup for a directory (tar.gz with rotation)
-  Path: shell/rotate-backup-dir.sh
+- Title: Rotate & Compress Old Logs
+  Language: Shell
+  Description: Rotate and compress files older than a threshold, truncate originals, and prune old archives.
+  Path: shell/rotate-compress-logs.sh
 
-- Title: simple-rotate-backup
-  Language: Bash
-  Description: Creates timestamped backups of a directory and rotates old backups
-  Path: shell/simple-rotate-backup.sh

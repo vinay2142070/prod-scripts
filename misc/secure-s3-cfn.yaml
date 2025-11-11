@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Secure S3 bucket with KMS encryption, versioning, lifecycle rules, and public access block."
+
+Parameters:
+  BucketName:
+    Type: String
+    Description: "Globally unique S3 bucket name"
+  TransitionToIA:
+    Type: Number
+    Default: 30
+    Description: "Days before transitioning objects to STANDARD_IA"
+  ExpireObjects:
+    Type: Number
+    Default: 365
+    Description: "Days before objects expire (deleted)"
+
+Resources:
+  BucketKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "KMS key for S3 bucket encryption"
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "Allow administration of the key"
+            Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+
+  SecureBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !Ref BucketKmsKey
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: "TransitionAndExpire"
+            Status: Enabled
+            Filter: {}
+            Transitions:
+              - StorageClass: STANDARD_IA
+                TransitionInDays: !Ref TransitionToIA
+            ExpirationInDays: !Ref ExpireObjects
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SecureBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "DenyUnencryptedObjectUploads"
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:PutObject"
+            Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+            Condition:
+              StringNotEquals:
+                "s3:x-amz-server-side-encryption": "aws:kms"
+          - Sid: "DenyInsecureTransport"
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:aws:s3:::${BucketName}"
+              - !Sub "arn:aws:s3:::${BucketName}/*"
+            Condition:
+              Bool:
+                "aws:SecureTransport": "false"
+
+Outputs:
+  BucketName:
+    Description: "Name of the S3 bucket"
+    Value: !Ref SecureBucket
+  KmsKeyArn:
+    Description: "KMS key ARN used for bucket encryption"
+    Value: !GetAtt BucketKmsKey.Arn

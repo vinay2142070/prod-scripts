@@ -1,16 +1,25 @@
-# Ignored patterns for common development environments
-# This is a minimal baseline to prevent committing common transient files
+# Node
 node_modules/
-*.log
-*.tmp
-.DS_Store
-.__pycache__/
-.pytest_cache/
+_dist/
 .env
-venv/
-build/
-dist/
-*.class
-*.o
+.env.local
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Python
+__pycache__/
 *.pyc
 
+# MacOS
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/

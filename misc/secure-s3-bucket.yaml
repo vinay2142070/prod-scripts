@@ -1,22 +1,32 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Secure S3 bucket with SSE, versioning, lifecycle transition to Glacier,
-  public access block, and policy denying non-TLS or non-encrypted uploads.
+  Secure S3 bucket with SSE-S3, versioning, lifecycle rules, and public access block.
 
 Parameters:
-  BucketName:
+  Environment:
     Type: String
-    Default: ""
-    Description: Optional. Specify a name for the bucket; leave empty for generated name.
+    Default: dev
+    Description: Environment tag (e.g., dev, staging, prod)
 
-Conditions:
-  HasBucketName: !Not [!Equals [!Ref BucketName, ""]]
+  TransitionToIAInDays:
+    Type: Number
+    Default: 30
+    Description: Days before objects transition to STANDARD_IA
+
+  TransitionToGlacierInDays:
+    Type: Number
+    Default: 365
+    Description: Days before objects transition to GLACIER
 
 Resources:
-  SecureBucket:
+  SecureS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !If [HasBucketName, !Ref BucketName, !Ref AWS::NoValue]
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: ManagedBy
+          Value: CloudFormation
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:
@@ -30,41 +40,45 @@ Resources:
         RestrictPublicBuckets: true
       LifecycleConfiguration:
         Rules:
+          - Id: TransitionToIA
+            Status: Enabled
+            Prefix: ""
+            Transitions:
+              - StorageClass: STANDARD_IA
+                TransitionInDays: !Ref TransitionToIAInDays
           - Id: TransitionToGlacier
             Status: Enabled
             Prefix: ""
             Transitions:
               - StorageClass: GLACIER
-                TransitionInDays: 30
+                TransitionInDays: !Ref TransitionToGlacierInDays
+          - Id: AbortIncompleteMultipartUpload
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
 
-  SecureBucketPolicy:
+  EnforceHttpsBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref SecureBucket
+      Bucket: !Ref SecureS3Bucket
       PolicyDocument:
-        Version: "2012-10-17"
+        Version: '2012-10-17'
         Statement:
-          - Sid: DenyInsecureTransport
+          - Sid: AllowSSLRequestsOnly
             Effect: Deny
             Principal: "*"
-            Action: "s3:PutObject"
-            Resource: !Sub "${SecureBucket.Arn}/*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "${SecureS3Bucket.Arn}"
+              - !Sub "${SecureS3Bucket.Arn}/*"
             Condition:
               Bool:
                 aws:SecureTransport: "false"
-          - Sid: DenyUnencryptedUploads
-            Effect: Deny
-            Principal: "*"
-            Action: "s3:PutObject"
-            Resource: !Sub "${SecureBucket.Arn}/*"
-            Condition:
-              StringNotEquals:
-                s3:x-amz-server-side-encryption: AES256
 
 Outputs:
   BucketName:
-    Description: Name of the created S3 bucket
-    Value: !Ref SecureBucket
+    Description: The name of the created S3 bucket
+    Value: !Ref SecureS3Bucket
   BucketArn:
-    Description: ARN of the created S3 bucket
-    Value: !GetAtt SecureBucket.Arn
+    Description: The ARN of the created S3 bucket
+    Value: !GetAtt SecureS3Bucket.Arn

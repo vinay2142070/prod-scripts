@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  S3 bucket with versioning, encryption, public access blocked and lifecycle rules
+  to transition objects to GLACIER/DEEP_ARCHIVE and expire old objects.
+
+Parameters:
+  RetentionDays:
+    Type: Number
+    Default: 365
+    Description: Delete objects (current versions) after this many days.
+  TransitionDays:
+    Type: Number
+    Default: 90
+    Description: Transition objects to GLACIER after this many days.
+  AbortMultipartAfterDays:
+    Type: Number
+    Default: 7
+    Description: Abort incomplete multipart uploads after this many days.
+
+Resources:
+  ArchiveBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: AbortIncompleteMultipart
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: !Ref AbortMultipartAfterDays
+          - Id: TransitionAndExpire
+            Status: Enabled
+            ExpirationInDays: !Ref RetentionDays
+            Transitions:
+              - TransitionInDays: !Ref TransitionDays
+                StorageClass: GLACIER
+              - TransitionInDays: !Ref RetentionDays
+                StorageClass: DEEP_ARCHIVE
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: CreatedBy
+          Value: CloudFormation
+        - Key: Purpose
+          Value: s3-lifecycle-archive
+
+Outputs:
+  BucketName:
+    Description: Name of the created S3 bucket
+    Value: !Ref ArchiveBucket

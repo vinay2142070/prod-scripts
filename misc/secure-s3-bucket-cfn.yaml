@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Secure S3 bucket with SSE, versioning, lifecycle (to Glacier), public-access block,
+  and a bucket policy that enforces HTTPS and SSE for uploads.
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: ""
+    Description: Optional — supply a name (must be globally unique). Leave empty for CFN-generated name.
+
+Conditions:
+  HasBucketName: !Not [!Equals [!Ref BucketName, ""]]
+
+Resources:
+  SecureBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # Only set a name when provided
+      BucketName: !If [HasBucketName, !Ref BucketName, !Ref "AWS::NoValue"]
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: MoveToGlacier
+            Status: Enabled
+            Prefix: ""
+            Transition:
+              - StorageClass: GLACIER
+                TransitionInDays: 30
+            NoncurrentVersionTransition:
+              - StorageClass: GLACIER
+                TransitionInDays: 30
+            NoncurrentVersionExpirationInDays: 365
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  BucketPublicAccessBlock:
+    Type: AWS::S3::BucketPublicAccessBlock
+    Properties:
+      Bucket: !Ref SecureBucket
+      BlockPublicAcls: true
+      IgnorePublicAcls: true
+      BlockPublicPolicy: true
+      RestrictPublicBuckets: true
+
+  SecureBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SecureBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Deny requests that are not using TLS
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "${SecureBucket.Arn}"
+              - !Sub "${SecureBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+          # Require server-side encryption for PutObject
+          - Sid: RequireSSEForPutObject
+            Effect: Deny
+            Principal: "*"
+            Action:
+              - "s3:PutObject"
+              - "s3:PutObjectAcl"
+            Resource: !Sub "${SecureBucket.Arn}/*"
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption: AES256
+
+Outputs:
+  BucketName:
+    Description: Name of the S3 bucket
+    Value: !Ref SecureBucket
+  BucketArn:
+    Description: ARN of the S3 bucket
+    Value: !GetAtt SecureBucket.Arn

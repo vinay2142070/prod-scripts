@@ -1,14 +1,12 @@
-# Snippets
+# Prod Scripts Snippets
 
-This repository stores automation and infrastructure snippets used for rapid automation tasks.
+A collection of small automation code snippets for rapid development and operations.
 
-## Snippet: Secure S3 bucket with SSE-KMS via CloudFormation
-- Language/Topic: CloudFormation (yaml)
-- Description: CloudFormation template to create a KMS-encrypted S3 bucket with HTTPS-only policy, public access blocked, versioning, and a lifecycle rule to transition to STANDARD_IA and expire objects.
-- Path: misc/secure-s3-kms-cfn.yaml
+## Snippets
 
-## Snippet List
-- Title: Secure S3 bucket with SSE-KMS via CloudFormation
-  Language: YAML / CloudFormation
-  Description: CloudFormation template to create a KMS-encrypted S3 bucket with HTTPS-only policy, public access blocked, versioning, and a lifecycle rule.
-  Path: misc/secure-s3-kms-cfn.yaml
+- Title: express-graceful-shutdown
+  Language: JavaScript
+  Description: Node.js Express graceful shutdown snippet with SIGINT/SIGTERM, drain in-flight requests and DB close.
+  Path: misc/express-graceful-shutdown.js
+
+
